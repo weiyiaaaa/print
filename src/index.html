@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>打印插件</title>
+  <style>
+    /* 页面撑满插件面板，去掉默认边距，避免出现外层滚动条（滚动交给内部区域） */
+    html, body, #root { height: 100%; margin: 0; padding: 0; }
+    body { overflow: hidden; }
+
+    /* 读取数据时的转圈动画（React 内联样式里直接引用类名） */
+    @keyframes pl-spin { to { transform: rotate(360deg); } }
+    .pl-spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #d9e2f5;
+      border-top-color: #3370ff;
+      border-radius: 50%;
+      animation: pl-spin 0.7s linear infinite;
+      flex: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+</body>
+</html>
