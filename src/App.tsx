@@ -4,8 +4,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SHEETS, sheetsForTable, matchStatus } from "./mapping";
 import type { SheetDef, ImageField, EditableField } from "./mapping";
-import { resolveField, getTableData, getImageUrls, fetchImageBytes, onActiveTableChange } from "./sdk";
-import type { FieldMeta, BitableRecord } from "./sdk";
+import { resolveField, getPrintTableData, getImageUrls, fetchImageBytes, onActiveTableChange, switchToTable } from "./sdk";
+import type { FieldMeta, BitableRecord, TableChoice } from "./sdk";
 import { fillSheet, loadWorkbook } from "./excel";
 import { sheetToHtml } from "./preview";
 import { loadSignatures, saveSignature, removeSignature, dataUrlToBytes, fileToSignatureDataUrl } from "./signatures";
@@ -15,6 +15,7 @@ import {
   PreviewPanel,
   RecordSelector,
   SignatureSettings,
+  TableChoicePanel,
   TemplatePicker,
   uiStyles,
 } from "./ui";
@@ -44,7 +45,7 @@ function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
-// ---------- 表头可编辑文本（单据编号等）的本地保存 ----------
+
 // 每个模板的每一项分开存，下次打开插件还是上次填的值。
 
 const editKey = (sheetId: string, key: string) => `pp.edit.${sheetId}.${key}`;
@@ -74,6 +75,9 @@ export default function App() {
   const [records, setRecords] = useState<BitableRecord[]>([]);
   const [table, setTable] = useState<any>(null);
   const [tableName, setTableName] = useState("");
+  const [tableChoiceRequired, setTableChoiceRequired] = useState(false);
+  const [tableChoices, setTableChoices] = useState<TableChoice[]>([]);
+  const [switchingTableId, setSwitchingTableId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [preview, setPreview] = useState<PrintPage[] | null>(null);
@@ -113,24 +117,36 @@ export default function App() {
     setError("");
     setPreview(null);
     try {
-      const t = await getTableData();
+      const result = await getPrintTableData();
       if (seq !== seqRef.current) return; // 快速连续切表时丢弃过期结果
+      setTableName(result.currentTable.name);
+      setTableChoiceRequired(!result.supported);
+      setTableChoices(result.targetTables);
+      setSelected(new Set()); // 默认不勾选，由用户自己挑记录
+      setSearch("");
+      if (!result.supported) {
+        setFields([]);
+        setRecords([]);
+        setTable(null);
+        return;
+      }
+
+      const t = result.data!;
       setFields(t.fields);
       setRecords(t.records);
       setTable(t.table ?? null);
-      const name = t.name || "数据表";
-      setTableName(name);
       // 模板跟随数据表：当前选中的模板不在该表的可用范围内时，切到该表的模板
-      const forTable = sheetsForTable(name);
+      const forTable = sheetsForTable(result.currentTable.name);
       setSheetId((cur) => (forTable.some((s) => s.id === cur) ? cur : forTable[0].id));
-      setSelected(new Set()); // 默认不勾选，由用户自己挑记录
-      setSearch("");
     } catch (error: unknown) {
       if (seq !== seqRef.current) return;
       setError(errorMessage(error, "读取多维表格数据失败"));
       setFields([]);
       setRecords([]);
+      setTable(null);
       setTableName("");
+      setTableChoices([]);
+      setTableChoiceRequired(false);
     } finally {
       if (seq === seqRef.current) setLoading(false);
     }
@@ -315,6 +331,34 @@ export default function App() {
     if (!pendingPrint.current) return;
     pendingPrint.current = false;
     setTimeout(iframePrint, 120); // 等图片完成解码
+  }
+
+  async function choosePrintTable(tableId: string) {
+    if (switchingTableId) return; // 同一时刻只允许一次跳转；刷新请求由 seqRef 执行替换策略
+    setSwitchingTableId(tableId);
+    setError("");
+    try {
+      const switched = await switchToTable(tableId);
+      if (!switched) throw new Error("未能跳转到目标数据表，请重试");
+      // 某些环境会同时触发 SelectionChange；seqRef 会丢弃其中一次过期读取。
+      await refresh();
+    } catch (error: unknown) {
+      setError(errorMessage(error, "跳转数据表失败，请重试"));
+    } finally {
+      setSwitchingTableId(null);
+    }
+  }
+
+  if (tableChoiceRequired) {
+    return (
+      <TableChoicePanel
+        currentTableName={tableName}
+        tables={tableChoices}
+        switchingId={switchingTableId}
+        error={error}
+        onSelect={choosePrintTable}
+      />
+    );
   }
 
   if (preview) {

@@ -248,7 +248,7 @@ function imagesHtml(wb: ExcelJSNamespace.Workbook, ws: ExcelJSNamespace.Workshee
  * - 打印：@page margin 为 0（去掉浏览器页眉页脚），留白由 .print-page 的 padding 还原；逐页分页，一律 100%
  * - td 内边距为 0，保证与 Excel 的单元格几何一致
  */
-export function pageCss(m: { l: number; r: number; t: number; b: number }, pageWmm: number, screenZoom = 1): string {
+export function pageCss(m: { l: number; r: number; t: number; b: number }, screenZoom = 1): string {
   return `
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; }

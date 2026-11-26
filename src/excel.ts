@@ -1,7 +1,8 @@
 // ===== 填充引擎：先合并空白单元格 -> 居中填入 -> 插入签名图片 -> 导出 =====
 // 只做三件事，不做标签猜测、不做占位符扫描：格子位置全部由 mapping.ts 指定。
 import type ExcelJSNamespace from "exceljs";
-import { BitableRecord, FieldMeta, resolveField } from "./sdk";
+import { resolveField } from "./sdk";
+import type { BitableRecord, FieldMeta } from "./sdk";
 import type { CellField, BlockField, CheckField, ImageField, EditableField, SheetDef } from "./mapping";
 import { fmtVerdict } from "./mapping";
 import {
@@ -13,8 +14,6 @@ import {
   parseRange,
 } from "./excel-utils";
 import type { GridRange } from "./excel-utils";
-
-export { bytesToDataUri, cellTextValue };
 
 const ExcelJS = require("exceljs") as typeof ExcelJSNamespace;
 const DATE_FMT = "YYYY-MM-DD";
@@ -52,11 +51,11 @@ export async function fillSheet(
   for (const ed of sheet.editable ?? []) fillEditable(ws, ed, record, fieldsByName, overrides);
   for (const ck of sheet.checks ?? []) fillCheck(ws, ck, record, fieldsByName);
   if (getImage) {
-    for (const im of sheet.images) await fillImage(wb, ws, im, record, fieldsByName, getImage);
+    for (const im of sheet.images) await fillImage(wb, ws, im, getImage);
   }
 }
 
-// ---------- 三种映射 ----------
+// ---------- 字段、表头与复选框 ----------
 
 /** 合并区：先拆掉内部小合并并合成一整块，再整体居中写入 */
 function fillBlock(ws: ExcelJSNamespace.Worksheet, b: BlockField, record: BitableRecord, fieldsByName: Map<string, FieldMeta>): void {
@@ -252,7 +251,7 @@ function replaceBlank(text: string, prefix: string, suffix: string, value: strin
   return text.replace(pattern, `${prefix}${" ".repeat(left)}${value}${" ".repeat(right)}${suffix}`);
 }
 
-/** 复选框：值等于 when 时，把该格第 box 个 □ 涂成实心黑方块（其余内容原样保留） */
+/** 复选框：值等于 when 时，把该格第 box 个 □ 涂成实心黑方块 */
 function fillCheck(ws: ExcelJSNamespace.Worksheet, ck: CheckField, record: BitableRecord, fieldsByName: Map<string, FieldMeta>): void {
   const raw = fieldText(record, ck.fields, fieldsByName);
   if (!raw) return;
@@ -284,8 +283,6 @@ async function fillImage(
   wb: ExcelJSNamespace.Workbook,
   ws: ExcelJSNamespace.Worksheet,
   im: ImageField,
-  record: BitableRecord,
-  fieldsByName: Map<string, FieldMeta>,
   getImage: ImageProvider
 ): Promise<void> {
   const img = await getImage(im.fields, im);

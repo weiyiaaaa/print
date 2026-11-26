@@ -463,25 +463,38 @@ const fat: SheetDef = {
 /** 界面上的模板列表：加模板 = 往这里加一项 */
 export const SHEETS: SheetDef[] = [review, fat];
 
-// ===== 数据表名 -> 模板 =====
-// 多维表格里切到哪张数据表，插件就只显示对应的那一个模板。
-// 按「评审」/「申请」区分，不能只看 FAT：评审表也可能叫「FAT发机评审单」。
-// 规则自上而下命中即停；都不命中时显示全部模板，避免新表名没法用。
-// 以后新增模板/新表名，在这里加一条规则即可。
-const TABLE_RULES: { test: RegExp; sheetId: string }[] = [
-  { test: /评审/, sheetId: "review" },      // FAT发机评审单 / 产品发机评审单 / 发机评审信息
-  { test: /申请/, sheetId: "fat" },         // 内部FAT实施申请单 / FAT申请单 / FAT申请表
-  { test: /fat/i, sheetId: "fat" },         // 兜底：表名里只写了 FAT
+// ===== 数据表路由：同一套规则决定“使用哪个模板”和“能否直接打印” =====
+// printable 只负责打印入口；未标记的宽松规则仅用于兼容旧模板选择。
+export const PRINT_TABLE_NAMES = ["FAT发机评审单", "FAT申请单"];
+
+interface TableRule {
+  test: RegExp;
+  sheetId: string;
+  printable?: boolean | ((name: string) => boolean);
+}
+
+const TABLE_RULES: TableRule[] = [
+  { test: /发机.*评审|评审.*发机/, sheetId: "review", printable: true },
+  { test: /评审/, sheetId: "review" },
+  { test: /fat/i, sheetId: "fat", printable: (name) => /申请/.test(name) || /^fat$/i.test(name) },
+  { test: /申请/, sheetId: "fat" },
 ];
 
-/** 按当前数据表名筛选可用模板 */
+const normalizeTableName = (name: string) => (name || "").replace(/\s+/g, "").trim();
+const matchTableRule = (name: string) => TABLE_RULES.find((rule) => rule.test.test(name));
+
+/** 只有明确的发机评审表和 FAT 申请表可以绕过选表页。 */
+export function isSupportedPrintTable(tableName: string): boolean {
+  const name = normalizeTableName(tableName);
+  const printable = matchTableRule(name)?.printable;
+  return printable === true || (typeof printable === "function" && printable(name));
+}
+
+/** 按当前数据表名筛选可用模板；未匹配的表保留全部模板用于兼容旧配置。 */
 export function sheetsForTable(tableName: string): SheetDef[] {
-  const name = (tableName || "").trim();
+  const name = normalizeTableName(tableName);
   if (!name) return SHEETS;
-  for (const r of TABLE_RULES) {
-    if (!r.test.test(name)) continue;
-    const s = SHEETS.find((x) => x.id === r.sheetId);
-    if (s) return [s];
-  }
-  return SHEETS;
+  const rule = matchTableRule(name);
+  const sheet = rule && SHEETS.find((item) => item.id === rule.sheetId);
+  return sheet ? [sheet] : SHEETS;
 }

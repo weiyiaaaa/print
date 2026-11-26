@@ -1,4 +1,4 @@
-// 一键打包：build -> 同步 dist 到部署目录 -> 生成 print-plugin-server.zip
+// 一键打包：build -> 同步 dist 与服务器源码 -> 生成 print-plugin-server.zip
 // 用法：npm run package
 // 产物：deploy/print-plugin-server.zip（拷到 Windows 服务器解压即用，无需 Node / npm）
 const { execFileSync } = require("child_process");
@@ -7,30 +7,23 @@ const fs = require("fs");
 
 const ROOT = path.resolve(__dirname, "..");
 const DIST = path.join(ROOT, "dist");
+const SERVER = path.join(ROOT, "server");
 const PKG_DIR = path.join(ROOT, "deploy", "print-plugin-server");
 const PKG_DIST = path.join(PKG_DIR, "dist");
+const PKG_SERVER = path.join(PKG_DIR, "server");
 const ZIP = path.join(ROOT, "deploy", "print-plugin-server.zip");
 
 function log(msg) { console.log("[打包] " + msg); }
 
-function copyDir(src, dst) {
-  fs.mkdirSync(dst, { recursive: true });
-  for (const name of fs.readdirSync(src)) {
-    const s = path.join(src, name);
-    const d = path.join(dst, name);
-    const stat = fs.statSync(s);
-    if (stat.isDirectory()) copyDir(s, d);
-    else fs.copyFileSync(s, d);
-  }
-}
-
 function main() {
   if (!fs.existsSync(DIST)) throw new Error("找不到 dist，请先执行 npm run build");
-  if (!fs.existsSync(PKG_DIR)) throw new Error("找不到部署目录 " + PKG_DIR);
+  fs.mkdirSync(PKG_DIR, { recursive: true });
 
-  log("1/3 清空并同步 dist ...");
+  log("1/3 同步页面与服务器源码 ...");
   fs.rmSync(PKG_DIST, { recursive: true, force: true });
-  copyDir(DIST, PKG_DIST);
+  fs.cpSync(DIST, PKG_DIST, { recursive: true });
+  fs.rmSync(PKG_SERVER, { recursive: true, force: true });
+  fs.cpSync(SERVER, PKG_SERVER, { recursive: true });
 
   log("2/3 生成 zip（Compress-Archive）...");
   if (fs.existsSync(ZIP)) fs.rmSync(ZIP, { force: true });

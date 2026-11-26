@@ -34,15 +34,40 @@ const tableB = {
   getFieldMetaList: async () => [{ id: "g1", name: "客户名称", type: 1, isPrimary: true }],
   getRecordListByPage: async () => ({ records: [{ recordId: "r9", fields: { g1: "客户X" } }], hasMore: false }),
 };
+const tableReviewTarget = {
+  id: "tblReviewTarget",
+  getName: async () => "FAT发机评审单",
+  getFieldMetaList: async () => [{ id: "f1", name: "项目号", type: 1, isPrimary: true }],
+  getRecordListByPage: async () => ({ records: [{ recordId: "review1", fields: { f1: "R-001" } }], hasMore: false }),
+};
+const tableFatTarget = {
+  id: "tblFatTarget",
+  getName: async () => "FAT申请单",
+  getFieldMetaList: async () => [],
+  getRecordListByPage: async () => ({ records: [], hasMore: false }),
+};
+const otherTable = {
+  id: "tblOther",
+  getName: async () => "项目资料",
+  getFieldMetaList: async () => { throw new Error("非目标表不应读取字段"); },
+  getRecordListByPage: async () => { throw new Error("非目标表不应读取记录"); },
+};
 let active = tableA;
 
 const fakeBase = {
   getActiveTable: async () => active,
+  getTableMetaList: async () => Promise.all([tableA, tableB, tableReviewTarget, tableFatTarget, otherTable].map(async (table) => ({ id: table.id, name: await table.getName() }))),
   onSelectionChange: (cb) => { handlers.onSelectionChange.push(cb); return () => handlers.onSelectionChange.pop(); },
   onTableAdd: (cb) => { handlers.onTableAdd.push(cb); return () => handlers.onTableAdd.pop(); },
   onTableDelete: (cb) => { handlers.onTableDelete.push(cb); return () => handlers.onTableDelete.pop(); },
 };
-const fakeApi = { base: fakeBase };
+const fakeUi = {
+  switchToTable: async (tableId) => {
+    active = [tableA, tableB, tableReviewTarget, tableFatTarget, otherTable].find((table) => table.id === tableId);
+    return !!active;
+  },
+};
+const fakeApi = { base: fakeBase, ui: fakeUi };
 
 // 拦截 SDK 的动态 import（TS 编译为 CJS 后会走 require）
 const origLoad = Module._load;
@@ -114,6 +139,22 @@ const check = (name, ok, extra) => {
   check("只写 FAT 的表名 -> FAT 模板兜底", ids("FAT") === "fat", ids("FAT"));
   check("未匹配的表名 -> 模板全显示", ids("表1") === "review,fat", ids("表1"));
   check("表名未知(空) -> 模板全显示", ids("") === "review,fat", ids(""));
+
+  // 10. 非目标表：只读取轻量表信息，返回两个固定入口，不触碰字段/记录
+  active = otherTable;
+  const gateway = await sdk.getPrintTableData();
+  check("其他表进入选表分支", gateway.supported === false && gateway.currentTable.name === "项目资料", JSON.stringify(gateway));
+  check("选表分支提供两个指定目标", gateway.targetTables.map((t) => t.name).join(",") === "FAT发机评审单,FAT申请单", JSON.stringify(gateway.targetTables));
+  check("非目标表不返回业务数据", gateway.data === undefined, typeof gateway.data);
+  check("无关申请表不能绕过选表分支", sdk.isSupportedPrintTable("其他申请表") === false, "");
+  check("FAT发机评审单允许直接打印", sdk.isSupportedPrintTable("FAT发机评审单") === true, "");
+  check("FAT申请单允许直接打印", sdk.isSupportedPrintTable("FAT申请单") === true, "");
+
+  // 11. 用户选择目标表：调用宿主切表，再读取目标表的打印数据
+  const switched = await sdk.switchToTable("tblReviewTarget");
+  const targetData = await sdk.getPrintTableData();
+  check("选择后切到 FAT发机评审单", switched && targetData.supported && targetData.currentTable.id === "tblReviewTarget", targetData.currentTable.id);
+  check("切表后沿用原打印数据链路", targetData.data && targetData.data.records[0].recordId === "review1", JSON.stringify(targetData.data));
 
   console.log(`\n结果：${pass} PASS / ${fail} FAIL`);
   process.exit(fail ? 1 : 0);

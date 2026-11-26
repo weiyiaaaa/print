@@ -1,7 +1,8 @@
 // 纯展示组件：不包含飞书 SDK、工作簿填充或打印状态，界面调整集中在这里。
 import type { CSSProperties, RefObject } from "react";
 import type { EditableField, ImageField, SheetDef } from "./mapping";
-import type { BitableRecord } from "./sdk";
+import { PRINT_TABLE_NAMES } from "./sdk";
+import type { BitableRecord, TableChoice } from "./sdk";
 import { pageCss } from "./preview";
 
 const button: CSSProperties = {
@@ -229,6 +230,50 @@ export function LoadingOverlay({ tableName }: { tableName: string }) {
   );
 }
 
+interface TableChoicePanelProps {
+  currentTableName: string;
+  tables: TableChoice[];
+  switchingId: string | null;
+  error: string;
+  onSelect: (tableId: string) => void;
+}
+
+/** 非打印表入口：只展示目标表，不让无关大表进入记录加载流程。 */
+export function TableChoicePanel({ currentTableName, tables, switchingId, error, onSelect }: TableChoicePanelProps) {
+  return (
+    <div style={{ boxSizing: "border-box", minHeight: "100vh", padding: 24, fontFamily: "-apple-system,'PingFang SC','Microsoft YaHei',sans-serif", color: "#1f2329" }}>
+      <h3 style={{ margin: "0 0 8px", fontSize: 17 }}>选择要打印的表单</h3>
+      <p style={{ margin: "0 0 6px", color: "#646a73", fontSize: 13, lineHeight: 1.6 }}>
+        当前表「{currentTableName || "数据表"}」不支持直接打印，请跳转到以下数据表操作。
+      </p>
+      <p style={{ margin: "0 0 18px", color: "#8f959e", fontSize: 12 }}>跳转后即可选择记录并打印。</p>
+      <div style={{ display: "grid", gap: 12 }}>
+        {PRINT_TABLE_NAMES.map((name) => {
+          const table = tables.find((item) => item.name === name);
+          const switching = !!table && switchingId === table.id;
+          return (
+            <div key={name} style={{ padding: 16, border: "1px solid #e0e0e5", borderRadius: 8, background: "#fff" }}>
+              <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 5 }}>{name}</div>
+              <div style={{ fontSize: 12, color: "#8f959e", marginBottom: 14 }}>
+                {name === "FAT发机评审单" ? "打印产品发机评审单" : "打印内部FAT申请表"}
+              </div>
+              <button
+                type="button"
+                style={table && !switchingId ? uiStyles.primaryButton : uiStyles.primaryButtonDisabled}
+                disabled={!table || !!switchingId}
+                onClick={() => table && onSelect(table.id)}
+              >
+                {switching ? "正在跳转…" : table ? "跳转并打印" : "当前多维表格中未找到此表"}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+      {error && <div role="alert" style={{ marginTop: 14, color: "#e24b4a", fontSize: 12, lineHeight: 1.6 }}>{error}</div>}
+    </div>
+  );
+}
+
 interface PreviewPanelProps {
   pages: PrintPage[];
   tableName: string;
@@ -245,7 +290,7 @@ interface PreviewPanelProps {
 export function PreviewPanel(props: PreviewPanelProps) {
   const { pages, tableName, sheetName, signHint, error, frameZoom, frameBox, onFrameLoad, onBack, onPrint } = props;
   const { margins, pageW } = pages[0];
-  const srcDoc = `<html><head><meta charset="utf-8"><style>${pageCss(margins, pageW, frameZoom)}</style></head><body>${pages.map((page) => page.html).join("")}</body></html>`;
+  const srcDoc = `<html><head><meta charset="utf-8"><style>${pageCss(margins, frameZoom)}</style></head><body>${pages.map((page) => page.html).join("")}</body></html>`;
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#f2f3f5" }}>
       <div style={{ padding: 10, display: "flex", gap: 8, alignItems: "center", borderBottom: "1px solid #e0e0e5", background: "#fff" }}>

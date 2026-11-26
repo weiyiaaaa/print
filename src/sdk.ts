@@ -1,4 +1,7 @@
-// ===== 数据层：读取多维表格记录/字段，字段值归一化 =====
+// ===== 数据层：多维表格访问、表路由、字段值归一化 =====
+import { PRINT_TABLE_NAMES, isSupportedPrintTable } from "./mapping";
+
+export { PRINT_TABLE_NAMES, isSupportedPrintTable };
 
 export interface FieldMeta {
   fieldId: string;
@@ -14,7 +17,7 @@ export interface BitableRecord {
 
 // 动态加载 SDK：优先 js-sdk（支持「自定义插件/边栏」本地调试），失败则回退 block-bitable-api（opdev 上传链路）
 let cachedApi: any = null;
-export async function getBitable(): Promise<any> {
+async function getBitable(): Promise<any> {
   if (cachedApi) return cachedApi;
   try {
     const mod: any = await import("@lark-base-open/js-sdk");
@@ -56,6 +59,19 @@ export interface TableData {
   records: BitableRecord[];
   /** js-sdk 的表对象：签名图片等需要按 recordId/fieldId 单独取值时用 */
   table?: any;
+}
+
+export interface TableChoice {
+  id: string;
+  name: string;
+}
+
+export interface PrintTableData {
+  supported: boolean;
+  currentTable: TableChoice;
+  targetTables: TableChoice[];
+  /** 仅目标表读取字段和记录；其他表不加载业务数据 */
+  data?: TableData;
 }
 
 function toFieldMeta(meta: any): FieldMeta {
@@ -179,6 +195,84 @@ export async function getTableData(): Promise<TableData> {
   return { name, tableId, fields, records };
 }
 
+/** 轻量读取当前表信息，避免仅为了判断表名就加载全部字段和记录。 */
+async function getActiveTableInfo(): Promise<TableChoice> {
+  const api = await getBitable();
+  const base = pick(api, "base") ?? api;
+  const getActiveTable = base?.getActiveTable;
+  if (typeof getActiveTable === "function") {
+    const table = await getActiveTable.call(base);
+    let id = table?.id ? String(table.id) : "";
+    if (!id && typeof table?.getMeta === "function") {
+      const meta = await table.getMeta();
+      id = meta?.id ? String(meta.id) : "";
+    }
+    let name = "数据表";
+    try { name = (await table.getName()) || name; } catch { /* ignore */ }
+    return { id, name };
+  }
+
+  const getActiveTableId = need(api, "base.getActiveTableId");
+  const id = String(await getActiveTableId.call(base));
+  let name = "数据表";
+  try {
+    if (typeof base?.getTableMetaById === "function") {
+      const meta = await base.getTableMetaById(id);
+      name = meta?.name || name;
+    } else if (typeof base?.getTableById === "function") {
+      const table = await base.getTableById(id);
+      name = (await table?.getName?.()) || name;
+    }
+  } catch { /* ignore */ }
+  return { id, name };
+}
+
+async function getTableChoices(api: any): Promise<TableChoice[]> {
+  const base = pick(api, "base") ?? api;
+  if (typeof base?.getTableMetaList === "function") {
+    const metas = await base.getTableMetaList();
+    return (metas || []).map((meta: any) => ({ id: String(meta.id), name: String(meta.name) }));
+  }
+  if (typeof base?.getTableList === "function") {
+    const tables = await base.getTableList();
+    return Promise.all((tables || []).map(async (table: any) => ({
+      id: String(table.id ?? (await table.getMeta?.())?.id ?? ""),
+      name: String((await table.getName?.()) || "数据表"),
+    })));
+  }
+  throw new Error("当前 SDK 不支持读取数据表列表，请升级插件 SDK");
+}
+
+/** 目标表直接读取打印数据；其他表只返回两个指定表的跳转入口。 */
+export async function getPrintTableData(): Promise<PrintTableData> {
+  const currentTable = await getActiveTableInfo();
+  if (isSupportedPrintTable(currentTable.name)) {
+    return {
+      supported: true,
+      currentTable,
+      targetTables: [],
+      data: await getTableData(),
+    };
+  }
+
+  const api = await getBitable();
+  const allTables = await getTableChoices(api);
+  const targetTables = PRINT_TABLE_NAMES.map((targetName) => {
+    const table = allTables.find((item) => item.name.replace(/\s+/g, "") === targetName);
+    return table ? { id: table.id, name: targetName } : null;
+  }).filter((table): table is TableChoice => !!table);
+  return { supported: false, currentTable, targetTables };
+}
+
+/** 切换多维表格中的激活数据表。 */
+export async function switchToTable(tableId: string): Promise<boolean> {
+  const api = await getBitable();
+  const ui = pick(api, "ui");
+  if (typeof ui?.switchToTable === "function") return !!(await ui.switchToTable(tableId));
+  if (typeof ui?.switchBlock === "function") return !!(await ui.switchBlock(tableId));
+  throw new Error("当前 SDK 不支持切换数据表，请升级插件 SDK");
+}
+
 /** 读取当前激活表的 ID（js-sdk 走 getActiveTable().id，旧式走 getActiveTableId） */
 async function readActiveTableId(): Promise<string | null> {
   try {
@@ -266,7 +360,7 @@ function joinTextSegs(v: any): string {
 }
 
 /** 任意字段值 -> 可打印文本，失败返回空串 */
-export function normalizeValue(value: unknown, fieldType?: number, dateFmt?: string): string {
+function normalizeValue(value: unknown, fieldType?: number, dateFmt?: string): string {
   if (value == null || value === "") return "";
   try {
     if (typeof value === "string") return value;

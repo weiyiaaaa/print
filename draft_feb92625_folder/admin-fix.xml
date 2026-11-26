@@ -1,0 +1,8 @@
+<p>以下命令适用于当前 Windows 自建部署。应按“本机 HTTP → 监听进程 → 公网访问 → 飞书控制台”的顺序检查，不能仅凭端口开放判断服务正常。</p>
+<ol>
+<li><b>检查本机 HTTP：</b>在服务器执行 <b>curl.exe -I --connect-timeout 3 --max-time 10 http://127.0.0.1:8666/</b>，正常应返回 <b>HTTP/1.1 200 OK</b>。</li>
+<li><b>检查 8666 监听进程：</b>执行 <b>netstat -ano | findstr "LISTENING" | findstr ":8666"</b>，正常应显示 0.0.0.0:8666，并能查到对应 node.exe。</li>
+<li><b>检查公网和飞书：</b>公网地址应能在普通浏览器中打开插件页面。若公网返回 200 而飞书仍一直加载，检查 Console 是否存在 Mixed Content、ERR_BLOCKED_BY_RESPONSE 或其他网络错误。</li>
+<li><b>需要重启时：</b>使用部署包中的计划任务脚本或“安装为开机自启.cmd”恢复服务；不要只重复添加防火墙规则。</li>
+</ol>
+<p><b>问题反馈：</b>联系插件管理员，并提供当前数据表名、问题记录、插件截图及浏览器 Console 报错，便于快速定位。</p>

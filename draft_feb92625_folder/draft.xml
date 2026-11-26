@@ -1,0 +1,107 @@
+<title>多维表格打印插件帮助文档</title>
+<p><b>适用版本：</b>V1.0.0　<b>适用环境：</b>飞书多维表格插件面板</p>
+<p>本插件用于把当前多维表格记录填入预设表单模板，生成 A4 打印预览。支持产品发机评审单、内部 FAT 申请表，以及批量记录打印、表头填写、签名图片管理和打印前检查。</p>
+
+<h1 seq="auto">插件功能</h1>
+<table>
+<colgroup><col width="190"/><col width="630"/></colgroup>
+<thead><tr><th background-color="light-gray"><p><b>功能</b></p></th><th background-color="light-gray"><p><b>说明</b></p></th></tr></thead>
+<tbody>
+<tr><td vertical-align="top"><p><b>双模板打印</b></p></td><td vertical-align="top"><p>支持“产品发机评审单”和“内部 FAT 申请表”，插件会根据当前数据表名过滤可用模板。</p></td></tr>
+<tr><td vertical-align="top"><p><b>批量处理</b></p></td><td vertical-align="top"><p>支持搜索记录、逐条勾选和全选，每条已选记录生成一份打印页。</p></td></tr>
+<tr><td vertical-align="top"><p><b>表头填写</b></p></td><td vertical-align="top"><p>可填写或修改单据编号等表头内容；清空后，打印时会尝试读取记录中的对应字段。</p></td></tr>
+<tr><td vertical-align="top"><p><b>签名管理</b></p></td><td vertical-align="top"><p>可读取记录中的签名附件，也可上传常用签名图，按模板规则填入对应签名位置。</p></td></tr>
+<tr><td vertical-align="top"><p><b>预览与切表刷新</b></p></td><td vertical-align="top"><p>打印前可检查版式和签名提示；切换多维表格的数据表后，插件会重新读取字段和记录。</p></td></tr>
+</tbody>
+</table>
+
+<h1 seq="auto">使用前准备</h1>
+<ul>
+<li><b>在正确入口运行：</b>必须在飞书多维表格的插件面板中打开。直接在普通浏览器中访问插件地址，只能检查页面服务是否正常，不能读取多维表格记录。</li>
+<li><b>确认数据权限：</b>当前账号需要能够查看目标数据表、记录及相关附件。</li>
+<li><b>检查记录内容：</b>打印前确认项目、客户、机型、日期、判定结果等字段已经填写。</li>
+<li><b>准备签名图片：</b>需要上传本地签名时，建议使用清晰、透明底的 PNG 图片。插件会等比压缩图片，避免签名文件过大。</li>
+</ul>
+
+<h1 seq="auto">打印操作步骤</h1>
+<ol>
+<li><b>打开数据表和插件。</b>进入目标多维表格数据表，打开打印插件，等待标题区域显示当前表名，记录列表加载完成。</li>
+<li><b>选择打印模板。</b>根据当前业务选择“产品发机评审单”或“内部 FAT 申请表”。插件已经按表名过滤时，使用当前可用模板即可。</li>
+<li><b>按需填写表头。</b>在“表头填写”区域修改单据编号等内容；点击“默认”可恢复默认值。填写内容会保存在当前浏览器中，供下次使用。</li>
+<li><b>按需管理签名。</b>点击“管理签名”，在对应签名位选择“上传”；需要更换时先“清除”再重新上传。不上传签名不会影响记录中已有签名附件的读取。</li>
+<li><b>勾选需要打印的记录。</b>可逐条勾选，也可先搜索再全选筛选结果。底部“打印”按钮会显示已选份数，未选择记录时不能打印。</li>
+<li><b>检查预览并打印。</b>点击“打印”，插件生成预览后尝试自动打开系统打印对话框。预览页可查看签名统计；点击“返回”可调整记录，点击“打印”可再次打开打印对话框。</li>
+</ol>
+<p><b>完成标准：</b>预览中的记录数量与已选份数一致，字段内容和签名位置正确，打印设置符合下一节要求。</p>
+
+<h1 seq="auto">字段与签名规则</h1>
+<h2 seq="auto">签名图片的读取顺序</h2>
+<table>
+<colgroup><col width="100"/><col width="300"/><col width="420"/></colgroup>
+<thead><tr><th background-color="light-gray"><p><b>顺序</b></p></th><th background-color="light-gray"><p><b>图片来源</b></p></th><th background-color="light-gray"><p><b>处理方式</b></p></th></tr></thead>
+<tbody>
+<tr><td vertical-align="top"><p>1</p></td><td vertical-align="top"><p><b>记录中的真实签名附件</b></p></td><td vertical-align="top"><p>优先下载并写入打印页面。需要团队共享签名时，推荐使用这种方式。</p></td></tr>
+<tr><td vertical-align="top"><p>2</p></td><td vertical-align="top"><p><b>附件有地址，但图片下载失败</b></p></td><td vertical-align="top"><p>预览会尝试通过图片地址显示。如果仍无法显示，请重新上传可访问的图片附件，不要仅填写图片链接文本。</p></td></tr>
+<tr><td vertical-align="top"><p>3</p></td><td vertical-align="top"><p><b>记录无可用图片，且签批状态已确认</b></p></td><td vertical-align="top"><p>对于配置了上传功能的签名位，使用“管理签名”中保存的本地图片。未满足签批条件时保持空白。</p></td></tr>
+</tbody>
+</table>
+<p>预览顶部出现“空白”或“仅有地址”提示时，应先检查签批状态、附件内容和访问权限，再执行打印。</p>
+
+<h2 seq="auto">字段匹配与数据表切换</h2>
+<ul>
+<li>插件按预设字段映射读取记录。部分字段支持多个候选名称，但不要随意修改已经正常使用的列名。</li>
+<li>如果记录中已有内容而打印结果为空白，先核对字段名称和字段类型；仍不一致时，联系插件管理员调整映射。</li>
+<li>切换数据表后，插件会重新加载字段和记录，并清空上一轮记录勾选；确认当前表名后再重新选择。</li>
+</ul>
+
+<h1 seq="auto">推荐打印设置</h1>
+<table>
+<colgroup><col width="250"/><col width="570"/></colgroup>
+<thead><tr><th background-color="light-gray"><p><b>设置项</b></p></th><th background-color="light-gray"><p><b>推荐值</b></p></th></tr></thead>
+<tbody>
+<tr><td vertical-align="top"><p>纸张</p></td><td vertical-align="top"><p><b>A4</b></p></td></tr>
+<tr><td vertical-align="top"><p>方向</p></td><td vertical-align="top"><p><b>纵向</b></p></td></tr>
+<tr><td vertical-align="top"><p>缩放</p></td><td vertical-align="top"><p><b>默认或 100%</b>，不要手动拉伸表单</p></td></tr>
+<tr><td vertical-align="top"><p>页边距</p></td><td vertical-align="top"><p><b>无</b>，表单所需留白已由打印页面保留</p></td></tr>
+<tr><td vertical-align="top"><p>浏览器页眉和页脚</p></td><td vertical-align="top"><p><b>关闭</b>，避免额外日期、网址或页码进入表单</p></td></tr>
+<tr><td vertical-align="top"><p>背景图形</p></td><td vertical-align="top"><p><b>开启</b>，否则涂黑选项和部分标记可能无法打印</p></td></tr>
+</tbody>
+</table>
+
+<h1 seq="auto">数据与本地存储说明</h1>
+<ul>
+<li>插件通过飞书多维表格 SDK 读取当前记录，并在浏览器中生成打印预览；当前 Windows 静态服务器只提供插件页面和静态资源，不包含业务数据库。</li>
+<li>“管理签名”上传的图片保存在当前浏览器的 localStorage 中，<b>不会自动同步到多维表格附件字段，也不会随账号、电脑或浏览器迁移</b>。</li>
+<li>清理浏览器数据、换电脑、换浏览器或更换插件访问地址后，需要重新上传本地签名。团队共用签名建议保存为记录附件。</li>
+<li>表头填写内容同样按模板保存在当前浏览器中；清空该填写项后，可回退到记录字段取值。</li>
+</ul>
+
+<h1 seq="auto">常见问题</h1>
+<table>
+<colgroup><col width="190"/><col width="250"/><col width="380"/></colgroup>
+<thead><tr><th background-color="light-gray"><p><b>现象</b></p></th><th background-color="light-gray"><p><b>可能原因</b></p></th><th background-color="light-gray"><p><b>处理方法</b></p></th></tr></thead>
+<tbody>
+<tr><td vertical-align="top"><p><b>插件一直加载</b></p></td><td vertical-align="top"><p>服务未运行、网络异常，或 HTTPS 飞书页面拦截 HTTP 插件。</p></td><td vertical-align="top"><p>先在新标签页打开插件地址。能打开而飞书仍失败时，联系管理员检查 Console 中的 Mixed Content，并配置受信任的 HTTPS 地址。</p></td></tr>
+<tr><td vertical-align="top"><p><b>读取不到记录</b></p></td><td vertical-align="top"><p>未在多维表格插件面板运行，或当前账号无数据权限。</p></td><td vertical-align="top"><p>回到目标多维表格重新打开插件，并确认当前账号可以查看记录。</p></td></tr>
+<tr><td vertical-align="top"><p><b>部分字段打印为空</b></p></td><td vertical-align="top"><p>记录未填写、字段名或类型与映射不一致。</p></td><td vertical-align="top"><p>补齐记录并核对列名；仍无法匹配时联系管理员检查字段映射。</p></td></tr>
+<tr><td vertical-align="top"><p><b>签名空白或提示仅有地址</b></p></td><td vertical-align="top"><p>签批状态未满足、附件不可访问，或字段中只有图片链接。</p></td><td vertical-align="top"><p>确认签批状态，重新上传真实图片附件；必要时在“管理签名”中补充本地签名。</p></td></tr>
+<tr><td vertical-align="top"><p><b>打印内容被裁切</b></p></td><td vertical-align="top"><p>纸张、缩放或页边距设置不正确。</p></td><td vertical-align="top"><p>使用 A4 纵向、默认缩放、无边距，关闭页眉页脚并开启背景图形。</p></td></tr>
+<tr><td vertical-align="top"><p><b>换电脑后签名消失</b></p></td><td vertical-align="top"><p>本地签名只保存在原浏览器中。</p></td><td vertical-align="top"><p>重新上传本地签名，或改用多维表格附件保存共享签名。</p></td></tr>
+</tbody>
+</table>
+
+<h1 seq="auto">管理员快速排查</h1>
+<p>以下命令适用于当前 Windows 自建部署。应按“本机 HTTP → 监听进程 → 公网访问 → 飞书控制台”的顺序检查，不能仅凭端口开放判断服务正常。</p>
+<ol>
+<li><b>检查本机 HTTP：</b>在服务器执行以下命令，正常应返回 <b>HTTP/1.1 200 OK</b>。</li>
+</ol>
+<pre lang="powershell" wrap="true"><code>curl.exe -I --connect-timeout 3 --max-time 10 http://127.0.0.1:8666/</code></pre>
+<ol seq="2">
+<li><b>检查 8666 监听进程：</b>正常应显示 0.0.0.0:8666，并能查到对应 node.exe。</li>
+</ol>
+<pre lang="cmd" wrap="true"><code>netstat -ano | findstr "LISTENING" | findstr ":8666"</code></pre>
+<ol seq="3">
+<li><b>检查公网和飞书：</b>公网地址应能在普通浏览器中打开插件页面。若公网返回 200 而飞书仍一直加载，检查 Console 是否存在 Mixed Content、ERR_BLOCKED_BY_RESPONSE 或其他网络错误。</li>
+<li><b>需要重启时：</b>使用部署包中的计划任务脚本或“安装为开机自启.cmd”恢复服务；不要只重复添加防火墙规则。</li>
+</ol>
+<p><b>问题反馈：</b>联系插件管理员，并提供当前数据表名、问题记录、插件截图及浏览器 Console 报错，便于快速定位。</p>

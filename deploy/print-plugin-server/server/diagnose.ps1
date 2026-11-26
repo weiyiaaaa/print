@@ -56,15 +56,15 @@ if ($listen.Count -eq 0) {
 # ---------- 4. 本机访问自测 ----------
 Title "4. 访问自测"
 try {
-  $r = Invoke-WebRequest -Uri ("http://127.0.0.1:" + $Port + "/") -UseBasicParsing -TimeoutSec 5
-  Line ("[OK] http://127.0.0.1:" + $Port + "/ 返回 " + $r.StatusCode) "Green"
+  $r = Invoke-WebRequest -Uri ("http://127.0.0.1:" + $Port + "/print/") -UseBasicParsing -TimeoutSec 5
+  Line ("[OK] http://127.0.0.1:" + $Port + "/print/ 返回 " + $r.StatusCode) "Green"
 } catch {
-  Line ("[X] http://127.0.0.1:" + $Port + "/ 打不开：" + $_.Exception.Message) "Red"
+  Line ("[X] http://127.0.0.1:" + $Port + "/print/ 打不开：" + $_.Exception.Message) "Red"
 }
 foreach ($ip in $ips) {
   try {
-    $r2 = Invoke-WebRequest -Uri ("http://" + $ip + ":" + $Port + "/") -UseBasicParsing -TimeoutSec 5
-    Line ("[OK] http://" + $ip + ":" + $Port + "/ 返回 " + $r2.StatusCode) "Green"
+    $r2 = Invoke-WebRequest -Uri ("http://" + $ip + ":" + $Port + "/print/") -UseBasicParsing -TimeoutSec 5
+    Line ("[OK] http://" + $ip + ":" + $Port + "/print/ 返回 " + $r2.StatusCode) "Green"
   } catch {
     Line ("[X] http://" + $ip + ":" + $Port + "/ 打不开（用局域网地址访问不通）") "Red"
   }
@@ -105,7 +105,7 @@ $ok = ($listen.Count -gt 0) -and $boundAll -and ($rule.Count -gt 0)
 if ($ok) {
   Line "本机监听正常（0.0.0.0）、防火墙已放行。" "Green"
   Line "如果别的电脑还是连不上，用下面这个地址试（必须在同一网段）：" "White"
-  foreach ($ip in $ips) { Line ("    http://" + $ip + ":" + $Port + "/") "White" }
+  foreach ($ip in $ips) { Line ("    http://" + $ip + ":" + $Port + "/print/") "White" }
   Line "再不行就查：无线 AP 隔离、交换机端口隔离、跨网段没路由。" "White"
 } else {
   Line "按上面标 [X] 的项逐个处理，最常见的两个原因：" "Yellow"

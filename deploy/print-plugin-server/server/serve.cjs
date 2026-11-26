@@ -1,4 +1,4 @@
-// ===== 生产用静态服务器：托管 dist/ 给飞书「自定义插件」加载 =====
+// ===== 生产用静态服务器：在 /print/ 下托管 dist/ 给飞书「自定义插件」加载 =====
 // 零第三方依赖，只用 Node 内置模块，方便在 Windows 上做成开机自启的服务。
 //
 // 用法：
@@ -16,6 +16,7 @@ const path = require("path");
 const os = require("os");
 
 const ROOT = path.resolve(__dirname, "..", "dist");
+const BASE_PATH = "/print";
 const PORT = Number(process.argv[2] || process.env.PORT || 8666);
 const HOST = process.env.HOST || "0.0.0.0";
 
@@ -56,13 +57,24 @@ const server = http.createServer((req, res) => {
     return send(res, 405, "Method Not Allowed");
   }
 
+  let requestUrl;
   let pathname;
   try {
-    pathname = decodeURIComponent(new URL(req.url, "http://localhost").pathname);
+    requestUrl = new URL(req.url, "http://localhost");
+    pathname = decodeURIComponent(requestUrl.pathname);
   } catch {
     return send(res, 400, "Bad Request");
   }
-  if (pathname === "/" || pathname === "") pathname = "/index.html";
+
+  // 打印插件独占 /print/，根路径留给同域名下的其他插件。
+  if (pathname === BASE_PATH) {
+    return send(res, 308, undefined, { Location: `${BASE_PATH}/${requestUrl.search}` });
+  }
+  if (!pathname.startsWith(`${BASE_PATH}/`)) {
+    return send(res, 404, "Not Found", { "Content-Type": "text/plain; charset=utf-8" });
+  }
+  pathname = pathname.slice(BASE_PATH.length);
+  if (pathname === "/") pathname = "/index.html";
 
   // 防目录穿越：拼完再确认仍在 dist 里面
   const filePath = path.join(ROOT, path.normalize(pathname).replace(/^(\.\.[/\\])+/, ""));
@@ -116,9 +128,9 @@ server.on("error", (e) => {
 });
 
 server.listen(PORT, HOST, () => {
-  log(`打印插件已启动：http://localhost:${PORT}/`);
+  log(`打印插件已启动：http://localhost:${PORT}${BASE_PATH}/`);
   if (HOST === "0.0.0.0") {
-    for (const ip of lanAddresses()) log(`局域网访问：      http://${ip}:${PORT}/`);
+    for (const ip of lanAddresses()) log(`局域网访问：      http://${ip}:${PORT}${BASE_PATH}/`);
   }
   log(`静态目录：${ROOT}`);
 });

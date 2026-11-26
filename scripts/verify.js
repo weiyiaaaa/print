@@ -308,7 +308,7 @@ function check(name, cond, detail) {
   const previewPath = path.join(ROOT, "scripts/out/preview-review.html");
   fs.writeFileSync(
     previewPath,
-    `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>预览 · ${sheet.name}</title><style>${pageCss(margins, pageWmm)}</style></head><body>${html}</body></html>`,
+    `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>预览 · ${sheet.name}</title><style>${pageCss(margins)}</style></head><body>${html}</body></html>`,
     "utf8"
   );
 
@@ -477,7 +477,7 @@ function check(name, cond, detail) {
     }
     const fatRender = fatToHtml(fwb, fws, { shift: fat.textShift });
     check("FAT 预览含现申请时间", fatRender.html.includes("现申请："), "");
-    const fatCssOut = fatPageCss(fatRender.margins, fatRender.pageWmm);
+    const fatCssOut = fatPageCss(fatRender.margins);
     check("打印样式 @page margin 已归零（去掉浏览器页眉页脚）", /@page\s*\{[^}]*margin:\s*0\s*;/.test(fatCssOut), (fatCssOut.match(/@page\s*\{[^}]*\}/) || [""])[0]);
     check("打印留白改由 .print-page 的 padding 还原", /@media print[\s\S]*?\.print-page\s*\{[^}]*padding:/.test(fatCssOut), "");
     check("FAT 申请次数填空（第   3   回，原宽度不变）", /^第\s+3\s+回$/.test(ft("L5")) && ft("L5").length === 12, JSON.stringify(ft("L5")));

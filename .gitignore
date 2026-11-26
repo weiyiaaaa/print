@@ -1,5 +1,8 @@
 node_modules/
 dist/
+scripts/.build/
+scripts/out/
+deploy/print-plugin-server/server/
 *.zip
 *.log
 .DS_Store

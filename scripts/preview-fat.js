@@ -49,12 +49,12 @@ for (const [k, v] of Object.entries(values)) {
   await wb.xlsx.readFile(sheet.file);
   await fillSheet(wb, sheet, record, fieldsByName, async () => null);
 
-  const { html, margins, pageWmm } = sheetToHtml(wb, wb.worksheets[0], { shift: sheet.textShift });
+  const { html, margins } = sheetToHtml(wb, wb.worksheets[0], { shift: sheet.textShift });
   fs.mkdirSync(OUT, { recursive: true });
   const file = path.join(OUT, "preview-fat.html");
   fs.writeFileSync(
     file,
-    `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>预览 · ${sheet.name}</title><style>${pageCss(margins, pageWmm)}</style></head><body>${html}</body></html>`,
+    `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>预览 · ${sheet.name}</title><style>${pageCss(margins)}</style></head><body>${html}</body></html>`,
     "utf8"
   );
 
